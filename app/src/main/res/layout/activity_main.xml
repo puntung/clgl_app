@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <android.support.v4.view.ViewPager
+        android:id="@+id/main_viewpager"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="10"
+        android:background="#f7f8f8"
+        >
+    </android.support.v4.view.ViewPager>
+
+    <RadioGroup
+        android:id="@+id/main_radiogroup"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="@android:color/white"
+        android:layout_alignParentBottom="true"
+        >
+        <RadioButton
+            android:id="@+id/rb_home"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:text="车辆管理"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:button="@null"
+            android:background="@drawable/common_button_big_grey_selector"
+            android:textColor="@android:color/white"
+            android:paddingBottom="2dp"/>
+        <RadioButton
+            android:id="@+id/rb_account"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:text="我的"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:button="@null"
+            android:background="@drawable/common_button_big_grey_selector"
+            android:textColor="@android:color/white" />
+    </RadioGroup>
+
+</LinearLayout>
