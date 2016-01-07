@@ -1,5 +1,6 @@
 package com.gdsx.clgl.view;
 
+import android.content.Intent;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
@@ -9,6 +10,7 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 
 import com.gdsx.clgl.R;
+import com.gdsx.clgl.tricks.Constants;
 import com.gdsx.clgl.tricks.FragPageAdapter;
 
 import java.util.ArrayList;
@@ -93,4 +95,5 @@ public class MainActivity extends AppCompatActivity {
         //ViewPager页面切换监听
         mPager.addOnPageChangeListener(new myOnPageChangeListener());
     }
+
 }
