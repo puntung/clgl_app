@@ -26,12 +26,35 @@
                 android:textColor="@android:color/white"
                 android:gravity="center"
                 android:textSize="16sp"
+                android:clickable="true"
                 android:layout_alignParentRight="true" />
     </RelativeLayout>
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/recycler_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="350dp"
         />
+    <LinearLayout
+        android:id="@+id/at_location"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/white"
+        android:layout_marginTop="20dp"
+        android:paddingLeft="10dp">
+        <ImageView
+            android:layout_width="25dp"
+            android:layout_height="25dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ffp"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:text="所在位置"
+            android:textSize="18sp"
+            android:textColor="@color/big_grey_h"
+            android:gravity="center_vertical"
+            android:layout_marginLeft="10dp"
+            />
+    </LinearLayout>
 </LinearLayout>
