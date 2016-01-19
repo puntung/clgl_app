@@ -2,7 +2,7 @@
 <resources>
     <string-array name="home_grid">
         <item>拍照上传</item>
-        <item>测试一</item>
+        <item>批量上传</item>
         <item>测试二</item>
         <item>测试三</item>
     </string-array>

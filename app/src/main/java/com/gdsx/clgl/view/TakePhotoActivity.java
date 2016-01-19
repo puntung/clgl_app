@@ -3,18 +3,17 @@ package com.gdsx.clgl.view;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.database.Observable;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.media.Image;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.provider.Settings;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.OrientationHelper;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
@@ -26,6 +25,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.gdsx.clgl.R;
+import com.gdsx.clgl.database.DataHelper;
+import com.gdsx.clgl.entity.UploadRecord;
 import com.gdsx.clgl.tricks.Constants;
 import com.gdsx.clgl.tricks.PhotoAdapter;
 import com.gdsx.clgl.utils.ReadImg2Binary2;
@@ -33,21 +34,18 @@ import com.google.gson.JsonObject;
 import com.square.github.restrofit.ClglClient;
 import com.square.github.restrofit.ServiceGenerator;
 
-import org.json.JSONObject;
-import org.w3c.dom.Text;
-
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 import me.iwf.photopicker.PhotoPickerActivity;
+import me.iwf.photopicker.entity.Photo;
+import me.iwf.photopicker.entity.PhotoDirectory;
+import me.iwf.photopicker.utils.ImageCaptureManager;
 import me.iwf.photopicker.utils.PhotoPickerIntent;
-import retrofit.Callback;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
-import retrofit.mime.TypedFile;
 import rx.Observer;
 import rx.android.schedulers.AndroidSchedulers;
+
+import static me.iwf.photopicker.utils.MediaStoreHelper.INDEX_ALL_PHOTOS;
 
 /**
  * Created by mglory on 2015/12/21.
@@ -55,12 +53,14 @@ import rx.android.schedulers.AndroidSchedulers;
 public class TakePhotoActivity extends Activity implements View.OnClickListener{
     RecyclerView recyclerView;
     PhotoAdapter photoAdapter;
+    private ImageCaptureManager captureManager;
     ArrayList<String> selectedPhotos = new ArrayList<>();
+    private List<PhotoDirectory> directories;
     double[] wc = new double[2];
     private ImageView back_imgv;
     private TextView submit_tv;
-    private LinearLayout loc_ly;
     private ClglClient client;
+    private DataHelper dh = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,42 +72,43 @@ public class TakePhotoActivity extends Activity implements View.OnClickListener{
     private void initView(){
         client = ServiceGenerator.createService(ClglClient.class,Constants.BASE_URL);
         recyclerView = (RecyclerView)findViewById(R.id.recycler_view);
+        captureManager = new ImageCaptureManager(this);
+        dh = new DataHelper(this);
         photoAdapter = new PhotoAdapter(this,selectedPhotos);
+        directories = new ArrayList<>();
         back_imgv = (ImageView)findViewById(R.id.pic_select_back);
         submit_tv = (TextView)findViewById(R.id.pic_select_submit);
-        loc_ly = (LinearLayout)findViewById(R.id.at_location);
         back_imgv.setOnClickListener(this);
         submit_tv.setOnClickListener(this);
-        loc_ly.setOnClickListener(this);
-        //select mode with one-pic  so the num of grid is 1
-        // if select mode is  nine-pic ,change number  4
-        recyclerView.setLayoutManager(new StaggeredGridLayoutManager(1, OrientationHelper.VERTICAL));
-        recyclerView.setAdapter(photoAdapter);
-        PhotoPickerIntent intent = new PhotoPickerIntent(this);
-        //select mode 1 or 9
-        intent.setPhotoCount(1);
-        intent.setShowCamera(true);
-        startActivityForResult(intent, Constants.REQUEST_CODE_PIC);
+
+        switchIntent();
     }
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         List<String> photos = null;
+        String path = null;
         if (resultCode == RESULT_OK && requestCode == Constants.REQUEST_CODE_PIC) {
             if (data != null) {
                 photos = data.getStringArrayListExtra(PhotoPickerActivity.KEY_SELECTED_PHOTOS);
+            }else {
+                captureManager.galleryAddPic();
+                path = captureManager.getCurrentPhotoPath();
+                wc = getCurrentLocation();
+                UploadRecord ur = new UploadRecord();
+                ur.setPath(path);
+                ur.setWc(wc[0]+","+wc[1]);
+                dh.insert(ur);
             }
             selectedPhotos.clear();
             if (photos != null) {
                 selectedPhotos.addAll(photos);
+            }else if (path != null){
+                selectedPhotos.add(path);
             }
             photoAdapter.notifyDataSetChanged();
-            wc = getCurrentLocation();
-
-        }else if(resultCode == RESULT_OK && requestCode == Constants.REQUEST_CODE_LOC){
-            Log.i("LOC","trun back to mainactiviry");
         } else {
-           finish();
+            finish();
         }
     }
     public void previewPhoto(Intent intent) {
@@ -126,22 +127,48 @@ public class TakePhotoActivity extends Activity implements View.OnClickListener{
                 finish();
                 break;
             case R.id.pic_select_submit:
-                Log.i("Select-pic", selectedPhotos.toString());
-                String imguri = selectedPhotos.get(0);
-                JsonObject datajson = new JsonObject();
-                datajson.addProperty("img", ReadImg2Binary2.imgToBase64(imguri));
-                datajson.addProperty("wc",wc[0]+","+wc[1]);
-                Log.i("data",datajson.toString());
-                Uploadpic(datajson);
-                break;
-            case R.id.at_location:
-                Toast.makeText(this,"("+wc[0]+","+wc[1]+")",Toast.LENGTH_SHORT).show();
+                for (int i=0;i<selectedPhotos.size();i++){
+                    Log.i("path", selectedPhotos.get(i));
+                    int eff = dh.update(selectedPhotos.get(i));
+                    Log.i("eff",eff+"");
+                    UploadRecord ur = dh.queryfromPath(selectedPhotos.get(i));
+                    JsonObject datajson = new JsonObject();
+                    datajson.addProperty("img", ReadImg2Binary2.imgToBase64(ur.getPath()));
+                    datajson.addProperty("wc", ur.getWc());
+                    uploadPic(datajson);
+                }
                 break;
         }
     }
 
+    private void switchIntent(){
+        Intent originIntent = getIntent();
+        int postion = originIntent.getIntExtra("position",-1);
+        switch (postion){
+            case 0 :
+                try {
+                    recyclerView.setLayoutManager(new StaggeredGridLayoutManager(1, OrientationHelper.VERTICAL));
+                    recyclerView.setAdapter(photoAdapter);
+                    Intent intent = captureManager.dispatchTakePictureIntent();
+                    startActivityForResult(intent, Constants.REQUEST_CODE_PIC);
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+                break;
+            case 1:
+                recyclerView.setLayoutManager(new StaggeredGridLayoutManager(4, OrientationHelper.VERTICAL));
+                recyclerView.setAdapter(photoAdapter);
+                PhotoPickerIntent intent = new PhotoPickerIntent(this);
+                intent.setPhotoCount(9);
+                intent.setShowCamera(false);
+                startActivityForResult(intent, Constants.REQUEST_CODE_PIC);
+                break;
+            case -1:
+                break;
+        }
+    }
 
-    private void Uploadpic(JsonObject json){
+    private void uploadPic(JsonObject json){
         final ProgressDialog pd = new ProgressDialog(this);
         pd.setMessage("正在上传中...");
         pd.show();
@@ -165,7 +192,7 @@ public class TakePhotoActivity extends Activity implements View.OnClickListener{
 
                    @Override
                    public void onNext(JsonObject jsonObject) {
-                       Log.i("data", jsonObject.toString());
+                       pd.dismiss();
                        String id = jsonObject.get("id").toString();
                        Toast.makeText(getApplication(), "上传成功，ID为 " + id, Toast.LENGTH_SHORT).show();
                    }
