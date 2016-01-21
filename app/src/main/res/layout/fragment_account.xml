@@ -5,10 +5,76 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <TextView
+
+    <LinearLayout
+        android:id="@+id/account_inf"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="Account"
-        android:gravity="center"/>
+        android:layout_height="35dp"
+        android:layout_marginTop="20dp"
+        android:paddingLeft="20dp"
+        android:paddingRight="20dp"
+        android:orientation="horizontal"
+        android:gravity="right|center"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="@drawable/account_list_selector">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="20dp"
+            android:text="个人信息" />
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/skin_icon_arrow_right"/>
+    </LinearLayout>
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:background="@color/font_grey"></View>
+    <LinearLayout
+        android:id="@+id/account_credit"
+        android:layout_width="match_parent"
+        android:layout_height="35dp"
+        android:paddingLeft="20dp"
+        android:paddingRight="20dp"
+        android:orientation="horizontal"
+        android:gravity="right|center"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="@drawable/account_list_selector">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="20dp"
+            android:text="积分查询" />
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/skin_icon_arrow_right"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/account_uploaded"
+        android:layout_width="match_parent"
+        android:layout_height="35dp"
+        android:layout_marginTop="20dp"
+        android:paddingLeft="20dp"
+        android:paddingRight="20dp"
+        android:orientation="horizontal"
+        android:gravity="right|center"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="@drawable/account_list_selector">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="20dp"
+            android:text="上传记录" />
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/skin_icon_arrow_right"/>
+    </LinearLayout>
 
 </LinearLayout>

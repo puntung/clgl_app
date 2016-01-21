@@ -127,15 +127,19 @@ public class TakePhotoActivity extends Activity implements View.OnClickListener{
                 finish();
                 break;
             case R.id.pic_select_submit:
-                for (int i=0;i<selectedPhotos.size();i++){
-                    Log.i("path", selectedPhotos.get(i));
-                    int eff = dh.update(selectedPhotos.get(i));
+
+                if (selectedPhotos.size()==1){
+                    int eff = dh.update(selectedPhotos.get(0));
                     Log.i("eff",eff+"");
-                    UploadRecord ur = dh.queryfromPath(selectedPhotos.get(i));
+                    UploadRecord ur = dh.queryfromPath(selectedPhotos.get(0));
                     JsonObject datajson = new JsonObject();
                     datajson.addProperty("img", ReadImg2Binary2.imgToBase64(ur.getPath()));
                     datajson.addProperty("wc", ur.getWc());
                     uploadPic(datajson);
+                }
+
+                if (selectedPhotos.size()>1){
+                    
                 }
                 break;
         }
@@ -168,7 +172,7 @@ public class TakePhotoActivity extends Activity implements View.OnClickListener{
         }
     }
 
-    private void uploadPic(JsonObject json){
+    private void uploadPic(final JsonObject json){
         final ProgressDialog pd = new ProgressDialog(this);
         pd.setMessage("正在上传中...");
         pd.show();

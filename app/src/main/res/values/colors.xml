@@ -7,4 +7,5 @@
     <color name="font_blue">#32A5E7</color>
     <color name="big_grey_h">#212121</color>
     <color name="big_grey_n">#353535</color>
+    <color name="selectedColor">#f00000</color>
 </resources>
