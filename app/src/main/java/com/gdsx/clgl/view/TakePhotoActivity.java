@@ -3,7 +3,6 @@ package com.gdsx.clgl.view;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -12,7 +11,6 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.provider.Settings;
 import android.support.v7.widget.OrientationHelper;
 import android.support.v7.widget.RecyclerView;
@@ -20,7 +18,6 @@ import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -38,14 +35,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.iwf.photopicker.PhotoPickerActivity;
-import me.iwf.photopicker.entity.Photo;
 import me.iwf.photopicker.entity.PhotoDirectory;
 import me.iwf.photopicker.utils.ImageCaptureManager;
 import me.iwf.photopicker.utils.PhotoPickerIntent;
 import rx.Observer;
 import rx.android.schedulers.AndroidSchedulers;
-
-import static me.iwf.photopicker.utils.MediaStoreHelper.INDEX_ALL_PHOTOS;
 
 /**
  * Created by mglory on 2015/12/21.
@@ -87,24 +81,24 @@ public class TakePhotoActivity extends Activity implements View.OnClickListener{
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         List<String> photos = null;
-        String path = null;
         if (resultCode == RESULT_OK && requestCode == Constants.REQUEST_CODE_PIC) {
             if (data != null) {
+                //相册选择
                 photos = data.getStringArrayListExtra(PhotoPickerActivity.KEY_SELECTED_PHOTOS);
             }else {
+                //拍照获取
                 captureManager.galleryAddPic();
-                path = captureManager.getCurrentPhotoPath();
+                String path = captureManager.getCurrentPhotoPath();
                 wc = getCurrentLocation();
                 UploadRecord ur = new UploadRecord();
                 ur.setPath(path);
                 ur.setWc(wc[0]+","+wc[1]);
                 dh.insert(ur);
+                photos.add(path);
             }
             selectedPhotos.clear();
             if (photos != null) {
                 selectedPhotos.addAll(photos);
-            }else if (path != null){
-                selectedPhotos.add(path);
             }
             photoAdapter.notifyDataSetChanged();
         } else {
@@ -127,22 +121,44 @@ public class TakePhotoActivity extends Activity implements View.OnClickListener{
                 finish();
                 break;
             case R.id.pic_select_submit:
-
-                if (selectedPhotos.size()==1){
-                    int eff = dh.update(selectedPhotos.get(0));
-                    Log.i("eff",eff+"");
-                    UploadRecord ur = dh.queryfromPath(selectedPhotos.get(0));
-                    JsonObject datajson = new JsonObject();
-                    datajson.addProperty("img", ReadImg2Binary2.imgToBase64(ur.getPath()));
-                    datajson.addProperty("wc", ur.getWc());
-                    uploadPic(datajson);
+                boolean iscontain = false;
+                List<UploadRecord> mr = new ArrayList<>();
+                for (String s : selectedPhotos){
+                    UploadRecord ur = dh.queryfromPath(s);
+                    if (ur.getPath()==null){
+                        ur.setPath(s);
+                        ur.setWc("");
+                        iscontain = true;
+                    }
+                    mr.add(ur);
                 }
-
-                if (selectedPhotos.size()>1){
-                    
+                if (iscontain){
+                    TipDialog(mr);
+                }else {
+                    uploadPic(mr);
                 }
                 break;
         }
+    }
+
+    private void TipDialog(final List<UploadRecord> mr){
+        final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("注意");
+        builder.setMessage("选择的文件中包含未获取位置信息的图片，是否继续上传");
+        builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+        builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+                uploadPic(mr);
+            }
+        });
+        builder.create().show();
     }
 
     private void switchIntent(){
@@ -160,7 +176,11 @@ public class TakePhotoActivity extends Activity implements View.OnClickListener{
                 }
                 break;
             case 1:
-                recyclerView.setLayoutManager(new StaggeredGridLayoutManager(4, OrientationHelper.VERTICAL));
+                if (selectedPhotos.size()==1){
+                    recyclerView.setLayoutManager(new StaggeredGridLayoutManager(1, OrientationHelper.VERTICAL));
+                }else {
+                    recyclerView.setLayoutManager(new StaggeredGridLayoutManager(4, OrientationHelper.VERTICAL));
+                }
                 recyclerView.setAdapter(photoAdapter);
                 PhotoPickerIntent intent = new PhotoPickerIntent(this);
                 intent.setPhotoCount(9);
@@ -172,36 +192,55 @@ public class TakePhotoActivity extends Activity implements View.OnClickListener{
         }
     }
 
-    private void uploadPic(final JsonObject json){
+    private void uploadPic(final List<UploadRecord> list){
         final ProgressDialog pd = new ProgressDialog(this);
-        pd.setMessage("正在上传中...");
+        pd.setMessage("上传中...   (1/"+list.size()+")");
+        pd.setCancelable(false);
         pd.show();
+        AsynPostWithRxJava(pd,list,1);
+
+    }
+
+    private void AsynPostWithRxJava(final ProgressDialog pd,final List<UploadRecord> list, final int index){
+        final JsonObject datajson = new JsonObject();
+        datajson.addProperty("img", ReadImg2Binary2.imgToBase64(list.get(index-1).getPath()));
+        datajson.addProperty("wc", list.get(index-1).getWc());
+        Log.i("datajson-->",datajson.toString());
         //RxJava
-       client.upload(json)
-               .observeOn(AndroidSchedulers.mainThread()) //Subscriber 回调发生在主线程
-               .subscribe(new Observer<JsonObject>() {
-                   @Override
-                   public void onCompleted() {
-                       Log.i("success", "SUCCESS");
-                       pd.dismiss();
-                       finish();
-                   }
+        client.upload(datajson)
+                .observeOn(AndroidSchedulers.mainThread()) //Subscriber 回调发生在主线程
+                .subscribe(new Observer<JsonObject>() {
+                    @Override
+                    public void onCompleted() {
+                        Log.i("success", "SUCCESS");
+                        finish();
+                    }
 
-                   @Override
-                   public void onError(Throwable e) {
-                       e.printStackTrace();
-                       Toast.makeText(getApplication(), "上传失败", Toast.LENGTH_SHORT).show();
-                       pd.dismiss();
-                   }
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                        Toast.makeText(getApplication(), "上传失败", Toast.LENGTH_SHORT).show();
+                        pd.dismiss();
+                    }
 
-                   @Override
-                   public void onNext(JsonObject jsonObject) {
-                       pd.dismiss();
-                       String id = jsonObject.get("id").toString();
-                       Toast.makeText(getApplication(), "上传成功，ID为 " + id, Toast.LENGTH_SHORT).show();
-                   }
-               });
+                    @Override
+                    public void onNext(JsonObject jsonObject) {
+                        int eff = dh.update(list.get(index-1).getPath());
+                        Log.i("eff=====>", eff + "");
 
+                        if (list.size() > index) {
+                            int mi = index+1;
+                            AsynPostWithRxJava(pd, list,mi);
+                            pd.setMessage("上传中...   (" + mi + "/" + list.size() + ")");
+                        } else {
+                            //String id = jsonObject.get("id").toString();
+                            list.clear();
+                            Toast.makeText(getApplication(), "上传成功", Toast.LENGTH_SHORT).show();
+                            pd.dismiss();
+                        }
+
+                    }
+                });
     }
 
     private double[] getCurrentLocation(){

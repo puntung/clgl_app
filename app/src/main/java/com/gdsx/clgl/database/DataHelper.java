@@ -8,6 +8,9 @@ import android.util.Log;
 
 import com.gdsx.clgl.entity.UploadRecord;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by Administrator on 2016/1/19.
  */
@@ -64,10 +67,47 @@ public class DataHelper {
         db = dbHelper.getWritableDatabase();
         ContentValues cv = new ContentValues();
         cv.put("uploaded", 1);
-        int effect = db.update("upload_record",cv,"path=?",new String[]{path});
+        int effect = db.update("upload_record", cv, "path=?", new String[]{path});
+        db.close();
         return effect;
     }
 
+
+    public List<UploadRecord> getUploadedPic(){
+        List<UploadRecord> mlist = new ArrayList<>();
+        db  = dbHelper.getReadableDatabase();
+        String sql = "select * from upload_record where uploaded = 1";
+        Cursor curosr  = db.rawQuery(sql, null);
+        while (curosr.moveToNext()){
+            UploadRecord ur = new UploadRecord();
+            ur.setId(curosr.getInt(0));
+            ur.setPath(curosr.getString(1));
+            ur.setWc(curosr.getString(2));
+            ur.setUploaded(curosr.getInt(3));
+            ur.setUploadtime(curosr.getString(4));
+            mlist.add(ur);
+        }
+        db.close();
+        return mlist;
+    }
+
+
+    public List<UploadRecord> getNotUploadedPic(){
+        List<UploadRecord> mlist = new ArrayList<>();
+        db  = dbHelper.getReadableDatabase();
+        String sql = "select * from upload_record where uploaded = 0";
+        Cursor curosr  = db.rawQuery(sql, null);
+        while (curosr.moveToNext()){
+            UploadRecord ur = new UploadRecord();
+            ur.setId(curosr.getInt(0));
+            ur.setPath(curosr.getString(1));
+            ur.setWc(curosr.getString(2));
+            ur.setUploaded(curosr.getInt(3));
+            mlist.add(ur);
+        }
+        db.close();
+        return mlist;
+    }
 
 
     public void close(){

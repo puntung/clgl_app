@@ -1,5 +1,7 @@
 package com.gdsx.clgl.entity;
 
+import java.util.Date;
+
 /**
  * Created by Administrator on 2016/1/19.
  */
@@ -8,15 +10,17 @@ public class UploadRecord {
     private String path;
     private String wc;
     private int uploaded;
+    private String uploadtime;
 
     public UploadRecord() {
     }
 
-    public UploadRecord(int id, String path, String wc, int uploaded) {
+    public UploadRecord(int id, String path, String wc, int uploaded,String uploadtime) {
         this.id = id;
         this.path = path;
         this.wc = wc;
         this.uploaded = uploaded;
+        this.uploadtime = uploadtime;
     }
 
     public int getId() {
@@ -51,6 +55,14 @@ public class UploadRecord {
         this.wc = wc;
     }
 
+    public void setUploadtime(String uploadtime) {
+        this.uploadtime = uploadtime;
+    }
+
+    public String getUploadtime() {
+        return uploadtime;
+    }
+
     @Override
     public String toString() {
         return "UploadRecord{" +
@@ -58,6 +70,7 @@ public class UploadRecord {
                 ", path='" + path + '\'' +
                 ", wc='" + wc + '\'' +
                 ", uploaded=" + uploaded +
+                ", uploadtime=" + uploadtime +
                 '}';
     }
 }
